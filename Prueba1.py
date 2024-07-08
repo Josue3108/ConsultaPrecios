@@ -1,14 +1,18 @@
 import pandas as pd
+import time as t
 
-# Load the Excel file
-file_path = r'C:\Users\yangr\Desktop\Programa\PRECIOS_LAB_SJ1.xlsx'  # Replace with your actual file path
+
+file_path = 'PRECIOS_LAB_SJ1.xlsx'  # Replace with your actual file path
 df = pd.read_excel(file_path)
+prices =  pd.DataFrame()
+    
+def get_price_p(item):
+    if df.loc[df['NAME'] == item].isnull:
+        new_df = df.loc[(df['NAME'] == item)]
+        new_df['QUANTITY'] = 1
+        return new_df
+    else:
+        print(prices)
 
-# Convert the DataFrame to a dictionary
-prices_dict = df.set_index('NAME')['PRICE'].to_dict()
-
-def get_price(item):
-    return prices_dict.get(item, "Item not found")
-
-d = int(get_price('IgE ANTI BANANO'))
-print (d * 1.04)
+prices = get_price_p('IgE ANTI BANANO')
+print(prices)
