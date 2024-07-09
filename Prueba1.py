@@ -6,6 +6,7 @@ file_path = 'PRECIOS_LAB_SJ1.xlsx'  # Replace with your actual file path
 df = pd.read_excel(file_path)
 prices =  pd.DataFrame()
     
+#Search and save a item that has been purchased   
 def get_price_p(item):
     if df.loc[df['NAME'] == item].isnull:
         new_df = df.loc[(df['NAME'] == item)]
@@ -15,4 +16,3 @@ def get_price_p(item):
         print(prices)
 
 prices = get_price_p('IgE ANTI BANANO')
-print(prices)
