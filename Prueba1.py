@@ -3,7 +3,6 @@ import pandas as pd
 file_path = 'PRECIOS_LAB_SJ1.xlsx'  # Replace with your actual file path
 df = pd.read_excel(file_path)
 prices = pd.DataFrame(columns=['NAME', 'PRICE', 'QUANTITY'])
-
 # Search and save an item that has been purchased
 def get_price_p(item, data):
     prices = data
@@ -21,7 +20,6 @@ def get_price_p(item, data):
             new_df['QUANTITY'] = 1
             prices = pd.concat([prices, new_df])
         return prices
-
 # Example usage
 prices = get_price_p('IgE ANTI BANANO',prices)
 prices = get_price_p('IgE ANTI BANANO',prices)
