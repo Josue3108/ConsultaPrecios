@@ -28,41 +28,47 @@ class excelMgr:
         #el programa pase a etapa de deploy, asumiendo que en la computadora del trabajo
         #ya existe o definieron en que carpeta se va a guardar.
         nuevo_excel.to_excel(ruta_completa, index=False)
+    def guardarExcel(self,ttemporal,nombreExcel,ruta):
+        ruta_completa = Path(ruta) / f'datos_{nombreExcel}.xlsx'  # esta ruta cambiarla para cuando
+        # el programa pase a etapa de deploy, asumiendo que en la computadora del trabajo
+        # ya existe o definieron en que carpeta se va a guardar.
+        ttemporal.to_excel(ruta_completa, index=False)
+
 
     # Otro método de instancia
-    def leerExcel(self, ruta):
+    def leerExcel(self, ruta): #excel de guardado
         # Replace with your actual file path
         self.currentExcel = pd.read_excel(ruta)#setea el excel actual al excel
         self.ruta = ruta
         #seleccionado con la ruta, esto debe cambiar couando se incorpore la GUI.
 
-    def modifExcel(self,item, data):
-        #falta corregir
-        datos = pd.DataFrame(columns=['NAME', 'PRICE', 'QUANTITY'])
-        # esto es el mismo método para leer el excel e incrementarle los valores
-        prices = data
-        # Check if the item exists in the DataFrame and if there are any null values in the subset
-        if self.currentExcel.loc[self.currentExcel['NAME'] == item].isnull().any().any():
-            new_df = self.currentExcel.loc[self.currentExcel['NAME'] == item].copy()  # Use .copy() to avoid SettingWithCopyWarning
-            new_df['QUANTITY'] = 1
-            return new_df #devuelve el dataframe,si encuentra valores
-        #nulos entonces va a obtener unicamente los valores que no sean nulos
+    def añadirCarrito(self,nomArt, ttemporal,ruta):# metodo que toma el excel de precios
+        #crea una tabla temporal y guarda en el archivo seleccionado
+        # basicamente lo que debe de hacer es leer el excel de la lista de precios
+        # añade en una tabla temporal los productos comprados
+        # si el produjcto ya esta en esa tabla temporal , entonces le incrementa en 1 la cantidad
+        # si el producto no existe en dicha tabla temporal(carrito de compras) lo añade
+        if not ttemporal.loc[ttemporal['NAME'] == nomArt].empty:#sees if the product exists
+            times = ttemporal.loc[ttemporal['NAME'] == nomArt, 'QUANTITY'].iloc[0]
+            ttemporal.loc[ttemporal['NAME'] == nomArt, 'QUANTITY'] = times + 1 #if the product exists sums one to the quantity
+            print("incremento")
         else:
-            #si el articulo existe, entonces incremente en 1 la cantidad
-            if not prices.loc[prices['NAME'] == item].empty:
-                times = prices.loc[prices['NAME'] == item, 'QUANTITY'].iloc[0]
-                prices.loc[prices['NAME'] == item, 'QUANTITY'] = times + 1
-            else:
-                new_df = self.currentExcel.loc[self.currentExcel['NAME'] == item].copy()
-                new_df['QUANTITY'] = 1
-                prices = pd.concat([prices, new_df])
-            ruta_por_defecto = 'C:\\Users\\Luis\\Desktop\\BreteLaboral'
-            ruta_completa = Path(ruta_por_defecto) / f'datos_{self.ruta.split('\\')[-1]}.xlsx'
-            new_df.to_excel(ruta_por_defecto, index=False) #esti es lo que guarda el excel
-            print(f'Se han guardado los cambios en el archivo Excel: {ruta_por_defecto}')
-    # Example usage
+            # Replace with your actual file path
+            df = pd.read_excel(ruta)
+            new_df = df.loc[df['NAME'] == nomArt].copy()#else the product gets registered as a new product
+            new_df['QUANTITY'] = 1
+            ttemporal = pd.concat([ttemporal, new_df])
+            print("añado")
+        return ttemporal
 
-#idealmente esto debe de ser una lista de todos lo que se compró
-# #por el momento guarda 1 unico dato para hacer las pruebas,posteriormente
-#debe de utilizarse una lista para ir almacenando todos los articulos que se deseen guardar
+        #basicamente lo que debe de hacer es leer el excel de la lista de precios
+        #añade en una tabla temporal los productos comprados
+        #si el produjcto ya esta en esa tabla temporal , entonces le incrementa en 1 la cantidad
+        #si el producto no existe en dicha tabla temporal(carrito de compras) lo añade
+
+
+
+
+
+
 

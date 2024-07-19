@@ -15,13 +15,15 @@ def get_price_p(item, data):
         if not prices.loc[prices['NAME'] == item].empty:#sees if the product exists 
             times = prices.loc[prices['NAME'] == item, 'QUANTITY'].iloc[0]
             prices.loc[prices['NAME'] == item, 'QUANTITY'] = times + 1 #if the product exists sums one to the quantity
+            print("incremento")
         else:
             new_df = df.loc[df['NAME'] == item].copy()#else the product gets registered as a new product
             new_df['QUANTITY'] = 1
             prices = pd.concat([prices, new_df])
+            print("añado")
         return prices
 # Example usage
 prices = get_price_p('IgE ANTI BANANO',prices)
 prices = get_price_p('IgE ANTI BANANO',prices)
-prices = get_price_p('IgE ANTI BANANO',prices)
+
 print(prices)
