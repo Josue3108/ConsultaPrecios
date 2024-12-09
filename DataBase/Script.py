@@ -107,3 +107,22 @@ def get_sales_by_fortnight_id(connection, fortnight_id):
         print(f"Error al realizar la consulta: {e}")
     finally:
         cursor.close()
+
+# Función principal
+if __name__ == "__main__":
+    # Conectar a la base de datos
+    conn = connect_to_database()
+    
+    # Crear las tablas
+    create_table_products(conn)
+    create_table_salesperfortnight(conn)
+    create_table_sales(conn)
+    
+    # Ejecutar consulta de ejemplo (puedes cambiar el ID para probar)
+    fortnight_id_to_query = 1  # Cambia este ID según los datos que tengas
+    print(f"Consultando ventas para el ID de quincena {fortnight_id_to_query}:")
+    get_sales_by_fortnight_id(conn, fortnight_id_to_query)
+    
+    # Cerrar la conexión
+    conn.close()
+    print("Conexión cerrada.")
