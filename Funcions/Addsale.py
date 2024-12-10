@@ -37,5 +37,6 @@ def Addsale(connection,prodName, quantity,quincena):
         print("Error al agregar la venta:", e)
         connection.rollback()
     return []
+
      
 
