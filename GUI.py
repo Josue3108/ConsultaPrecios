@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import ttk
 from ttkbootstrap import Style
+from Funcions.Load import load_products
+from Funcions.Search import search_products
 
 class SalesApp:
     def __init__(self, root):
@@ -8,9 +10,6 @@ class SalesApp:
         style = Style("minty")  # Tema claro con tonos pastel
         root.title("Gestor de Ventas")
         root.configure(bg="white")  # Fondo blanco
-
-        # Lista de productos (puedes reemplazar o cargar desde una base de datos)
-        self.products = ["Manzana", "Banana", "Cereal", "Detergente", "Leche", "Arroz", "Pasta"]
 
         # Espacio para el logotipo
         logo_frame = ttk.Frame(root, padding=10, style="TFrame")
@@ -45,10 +44,13 @@ class SalesApp:
         add_button = ttk.Button(root, text="Agregar Artículo", style="success.TButton", command=self.add_item)
         add_button.pack(pady=10)
 
+        # Cargar productos desde la base de datos
+        self.products = load_products()
+
     def search_product(self):
         """Filtra los productos según el término ingresado."""
-        search_term = self.search_entry.get().lower()
-        results = [product for product in self.products if search_term in product.lower()]
+        search_term = self.search_entry.get()
+        results = search_products(self.products, search_term)
         
         # Actualiza el combobox con los resultados
         self.result_combobox["values"] = results
