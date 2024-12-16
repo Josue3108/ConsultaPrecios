@@ -56,13 +56,33 @@ def add_sales_per_fortnight(connection):
         connection.rollback()
         return False
 
-# Ejemplo de uso
-if __name__ == "__main__":
-    connection = sqlite3.connect("ReportePagosBVLabs.db")
+def initialize_fortnight(connection):
+    """
+    Verifica si existe al menos una quincena en el mes y año actual. 
+    Si no existe, crea la primera quincena usando add_sales_per_fortnight.
+    """
+    try:
+        # Obtener el mes y el año actuales
+        now = datetime.now()
+        month = now.month
+        year = now.year
 
-    if add_sales_per_fortnight(connection):
-        print("Quincena agregada correctamente.")
-    else:
-        print("Hubo un problema al agregar la quincena o ya están todas creadas.")
+        cursor = connection.cursor()
 
-    connection.close()
+        # Verificar si ya existe al menos una quincena para el mes y año actuales
+        cursor.execute('''
+            SELECT COUNT(*) FROM SalesperFortnight WHERE month = ? AND year = ?
+        ''', (month, year))
+        count = cursor.fetchone()[0]
+
+        if count == 0:
+            # Si no existe ninguna quincena, crea la primera
+            if add_sales_per_fortnight(connection):
+                print("Primera quincena creada exitosamente.")
+            else:
+                print("No se pudo crear la primera quincena.")
+        else:
+            print(f"Ya existe al menos una quincena para {month:02d}/{year}. No se realizaron cambios.")
+
+    except sqlite3.Error as e:
+        print(f"Error al inicializar la quincena: {e}")

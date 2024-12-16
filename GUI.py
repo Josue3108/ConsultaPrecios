@@ -3,6 +3,11 @@ from tkinter import ttk
 from ttkbootstrap import Style
 from Funcions.Load import load_products
 from Funcions.Search import search_products
+from Funcions.AddFortnight import initialize_fortnight
+from Funcions.Addsale import Addsale
+from Funcions.GetFortnight import get_last_fortnight
+
+import sqlite3
 
 class SalesApp:
     def __init__(self, root):
@@ -10,6 +15,15 @@ class SalesApp:
         style = Style("minty")  # Tema claro con tonos pastel
         root.title("Gestor de Ventas")
         root.configure(bg="white")  # Fondo blanco
+
+        # Conexión a la base de datos
+        self.connection = sqlite3.connect("ReportePagosBVLabs.db")
+
+        # Inicializar la quincena automáticamente
+        try:
+            initialize_fortnight(self.connection)
+        except Exception as e:
+            print(f"Error al inicializar la quincena: {e}")
 
         # Espacio para el logotipo
         logo_frame = ttk.Frame(root, padding=10, style="TFrame")
@@ -40,8 +54,18 @@ class SalesApp:
         self.result_combobox = ttk.Combobox(root, state="readonly", font=("Helvetica", 12))
         self.result_combobox.pack(fill=tk.X, padx=10, pady=10)
 
+        # Cuadro para ingresar la cantidad
+        quantity_frame = ttk.Frame(root, padding=10, style="TFrame")
+        quantity_frame.pack(fill=tk.X)
+
+        ttk.Label(quantity_frame, text="Cantidad:", font=("Helvetica", 12)).grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        
+        self.quantity_entry = ttk.Entry(quantity_frame)
+        self.quantity_entry.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+        quantity_frame.columnconfigure(1, weight=1)
+
         # Botón para agregar artículo
-        add_button = ttk.Button(root, text="Agregar Artículo", style="success.TButton", command=self.add_item)
+        add_button = ttk.Button(root, text="Registrar Venta", style="success.TButton", command=self.register_sale)
         add_button.pack(pady=10)
 
         # Cargar productos desde la base de datos
@@ -59,11 +83,23 @@ class SalesApp:
         else:
             self.result_combobox.set("")  # Limpia si no hay resultados
 
-    def add_item(self):
-        """Agrega el artículo seleccionado del Combobox."""
+    def register_sale(self):
+        """Registra la venta del artículo seleccionado en la base de datos."""
         selected_item = self.result_combobox.get()
-        if selected_item:
-            print(f"Artículo agregado: {selected_item}")
+        quantity = self.quantity_entry.get()
+
+        if not selected_item:
+            print("Por favor selecciona un producto.")
+            return
+
+        if not quantity.isdigit() or int(quantity) <= 0:
+            print("Por favor ingresa una cantidad válida.")
+            return
+
+        try:
+            Addsale(self.connection, selected_item, int(quantity))
+        except Exception as e:
+            print(f"Error al registrar la venta: {e}")
 
 if __name__ == "__main__":
     root = tk.Tk()

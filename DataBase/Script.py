@@ -41,7 +41,7 @@ def create_table_salesperfortnight(connection):
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 month TEXT NOT NULL,
                 year INTEGER NOT NULL,
-                fortnight INTEGER NOT NULL CHECK(fortnight IN (1, 2, 3, 4))
+                fortnight_name TEXT NOT NULL
             );
         ''')
         connection.commit()
