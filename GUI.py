@@ -5,16 +5,43 @@ from Funcions.Load import load_products
 from Funcions.Search import search_products
 from Funcions.AddFortnight import initialize_fortnight
 from Funcions.Addsale import Addsale
-from Funcions.GetFortnight import get_last_fortnight
-
+from PIL import Image, ImageTk
 import sqlite3
 
 class SalesApp:
     def __init__(self, root):
-        # Estilo tonos pastel
-        style = Style("minty")  # Tema claro con tonos pastel
+        style = Style("litera")  # Aplica el tema litera
         root.title("Gestor de Ventas")
         root.configure(bg="white")  # Fondo blanco
+
+         # Establecer el tamaño fijo de la ventana
+        root.geometry("400x500")  # Tamaño fijo (600x400 píxeles)
+        root.resizable(False, False)  # Desactiva la capacidad de redimensionar la ventana
+
+
+        # Personalización del estilo de los botones sin borde
+        style.configure("TButton",
+                        font=("Helvetica", 10, "bold"),  # Fuente más pequeña
+                        foreground="white",  # Color de texto blanco
+                        background="blue",  # Fondo azul para los botones generales
+                        padding=6,  # Reducir padding para botones más pequeños
+                        relief="flat")  # Sin borde
+
+        style.map("TButton",
+                  foreground=[('active', 'yellow')],  # Cambia el color del texto cuando el botón está activo
+                  background=[('active', 'darkblue')])  # Cambia el color de fondo cuando el botón está activo
+
+        # Personalización del botón de búsqueda (verde) sin borde
+        style.configure("search.TButton",
+                        font=("Helvetica", 10, "bold"),  # Fuente más pequeña
+                        foreground="white",  # Color de texto blanco
+                        background="green",  # Fondo verde para el botón de búsqueda
+                        padding=6,  # Reducir padding para un tamaño más pequeño
+                        relief="flat")  # Sin borde
+
+        style.map("search.TButton",
+                  foreground=[('active', 'yellow')],  # Cambia el color del texto cuando el botón está activo
+                  background=[('active', 'darkgreen')])  # Cambia el color de fondo cuando el botón está activo
 
         # Conexión a la base de datos
         self.connection = sqlite3.connect("ReportePagosBVLabs.db")
@@ -26,18 +53,21 @@ class SalesApp:
             print(f"Error al inicializar la quincena: {e}")
 
         # Espacio para el logotipo
-        logo_frame = ttk.Frame(root, padding=10, style="TFrame")
+        logo_frame = ttk.Frame(root, padding=10)
         logo_frame.pack(fill=tk.X)
-        ttk.Label(logo_frame, text="LOGOTIPO DE LA EMPRESA", 
-                  font=("Helvetica", 20, "bold"), anchor="center", background="white").pack(pady=10)
 
-        # Encabezado
-        header = ttk.Label(root, text="Gestor de Ventas de Tienda", 
-                           font=("Helvetica", 16), anchor="center", background="white")
-        header.pack(pady=10)
+        try:
+            image = Image.open("Images/BV LABS.jpg")
+            image = image.resize((200, 200))  # Ajusta el tamaño según sea necesario
+            self.logo_image = ImageTk.PhotoImage(image)
+            ttk.Label(logo_frame, image=self.logo_image, anchor="center", background="white").pack(pady=10)
+        except Exception as e:
+            print(f"No se pudo cargar el logotipo: {e}")
+            ttk.Label(logo_frame, text="LOGOTIPO DE LA EMPRESA", 
+                    font=("Helvetica", 20, "bold"), anchor="center", background="white").pack(pady=10)
 
         # Frame para buscar productos
-        search_frame = ttk.Frame(root, padding=10, style="TFrame")
+        search_frame = ttk.Frame(root, padding=10)
         search_frame.pack(fill=tk.X)
 
         ttk.Label(search_frame, text="Buscar Producto:", font=("Helvetica", 12)).grid(row=0, column=0, padx=5, pady=5, sticky="w")
@@ -45,17 +75,20 @@ class SalesApp:
         self.search_entry = ttk.Entry(search_frame)
         self.search_entry.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
 
-        search_button = ttk.Button(search_frame, text="Buscar", style="primary.TButton", command=self.search_product)
+        # Botón de búsqueda con estilo verde y sin borde
+        search_button = ttk.Button(search_frame, text="Buscar", style="search.TButton", command=self.search_product)
         search_button.grid(row=0, column=2, padx=5, pady=5)
         
         search_frame.columnconfigure(1, weight=1)
+
+        self.search_entry.bind("<Return>", self.search_product_event)
 
         # Combobox para mostrar resultados
         self.result_combobox = ttk.Combobox(root, state="readonly", font=("Helvetica", 12))
         self.result_combobox.pack(fill=tk.X, padx=10, pady=10)
 
         # Cuadro para ingresar la cantidad
-        quantity_frame = ttk.Frame(root, padding=10, style="TFrame")
+        quantity_frame = ttk.Frame(root, padding=10)
         quantity_frame.pack(fill=tk.X)
 
         ttk.Label(quantity_frame, text="Cantidad:", font=("Helvetica", 12)).grid(row=0, column=0, padx=5, pady=5, sticky="w")
@@ -64,12 +97,16 @@ class SalesApp:
         self.quantity_entry.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
         quantity_frame.columnconfigure(1, weight=1)
 
-        # Botón para agregar artículo
-        add_button = ttk.Button(root, text="Registrar Venta", style="success.TButton", command=self.register_sale)
+        # Botón para agregar artículo sin borde
+        add_button = ttk.Button(root, text="Registrar Venta", style="TButton", command=self.register_sale)
         add_button.pack(pady=10)
 
         # Cargar productos desde la base de datos
         self.products = load_products()
+
+    def search_product_event(self, event=None):
+        """Maneja el evento de presionar Enter en el campo de búsqueda."""
+        self.search_product()
 
     def search_product(self):
         """Filtra los productos según el término ingresado."""
