@@ -25,7 +25,7 @@ def get_sales_last_fortnight(connection):
             INNER JOIN Products ON Sales.product_id = Producs.id
             INNER JOIN Products ON Sales.fortnight_id = SalesperFortnight.id
             WHERE  SalesperFortnight.id= ?
-            ORDER BY Products.quantity DESC
+            ORDER BY Sales.quantity DESC
         ''', (id_quincena))
 
         row = cursor.fetchone()
