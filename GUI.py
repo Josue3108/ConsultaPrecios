@@ -5,6 +5,8 @@ from Funcions.Load import load_products
 from Funcions.Search import search_products
 from Funcions.AddFortnight import initialize_fortnight
 from Funcions.Addsale import Addsale
+from Funcions.getPDF import generate_pdf
+from Funcions.Getquincena import get_sales_last_fortnight
 from PIL import Image, ImageTk
 import sqlite3
 
@@ -97,9 +99,20 @@ class SalesApp:
         self.quantity_entry.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
         quantity_frame.columnconfigure(1, weight=1)
 
+        # Frame para botones
+        button_frame = ttk.Frame(root, padding=10)
+        button_frame.pack(fill=tk.X)
+
         # Botón para agregar artículo sin borde
-        add_button = ttk.Button(root, text="Registrar Venta", style="TButton", command=self.register_sale)
-        add_button.pack(pady=10)
+        add_button = ttk.Button(button_frame, text="Registrar Venta", style="TButton", command=self.register_sale)
+        add_button.grid(row=0, column=0, padx=5, pady=5)
+
+        # Botón para ver reporte
+        report_button = ttk.Button(button_frame, text="Ver Reporte", style="TButton", command=self.view_report)
+        report_button.grid(row=0, column=1, padx=5, pady=5)
+
+        button_frame.columnconfigure(0, weight=1)
+        button_frame.columnconfigure(1, weight=1)
 
         # Cargar productos desde la base de datos
         self.products = load_products()
@@ -137,6 +150,12 @@ class SalesApp:
             Addsale(self.connection, selected_item, int(quantity))
         except Exception as e:
             print(f"Error al registrar la venta: {e}")
+
+    def view_report(self):
+        """Muestra el reporte de ventas."""
+        data = get_sales_last_fortnight(self.connection)
+        print(data)
+        generate_pdf(data)
 
 if __name__ == "__main__":
     root = tk.Tk()
