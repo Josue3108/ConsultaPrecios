@@ -18,25 +18,25 @@ def get_sales_last_fortnight(connection):
         if not busqueda_quincena:
             print("No se encontró la última quincena.")
             return None
-        
-        id_quincena = busqueda_quincena["id"]
-
+        id_quincena = busqueda_quincena["id"] 
+        nombre_quincena = busqueda_quincena["fortnight_name"]
         # Ejecutar la consulta
         cursor.execute('''
             SELECT 
-                Products.name, 
-                Products.price, 
-                Sales.quantity, 
-                Products.price * Sales.quantity AS total_price, 
-                (Products.price * 0.13) AS iva, 
-                ((Products.price * 0.13) + Products.price) * Sales.quantity AS total_price_with_iva
+                Products.name AS name, 
+                Products.price AS price, 
+                Sales.quantity AS quantity, 
+                (Products.price * Sales.quantity) AS total_price, 
+                ROUND((Products.price * 0.13),2) AS iva, 
+                (((Products.price * 0.13) + Products.price) * Sales.quantity) AS total_price_with_iva,
+                SUM(Products.price * Sales.quantity) OVER() AS overall_Price,
+                SUM((((Products.price * 0.13) + Products.price) * Sales.quantity)) OVER() as overall_price_iva
             FROM Sales
             INNER JOIN Products ON Sales.product_id = Products.id
             INNER JOIN SalesperFortnight ON Sales.fortnight_id = SalesperFortnight.id
             WHERE SalesperFortnight.id = ?
             ORDER BY Sales.quantity DESC
         ''', (id_quincena,))
-
         rows = cursor.fetchall()
 
         if rows:
@@ -45,11 +45,14 @@ def get_sales_last_fortnight(connection):
             for i, row in enumerate(rows):
                 result[f"venta_{i+1}"] = {
                     "name": row[0],
-                    "price": row[1],
+                    "price":row[1], #forzado de conversion de tipos, quick fix
                     "quantity": row[2],
-                    "total_price": row[3],
-                    "iva": row[4],
-                    "total_price_with_iva": row[5],
+                    "total_price": int(row[3]),
+                    "iva": float(row[4]),
+                    "total_price_with_iva": float(row[5]),
+                    "overall_Price": int(row[6]),
+                    "overall_price_iva": float(row[7]),
+                    "quincena":nombre_quincena
                 }
             return result
         else:
