@@ -1,107 +1,139 @@
-from reportlab.lib.pagesizes import letter
+import sqlite3
+from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
-from tkinter import filedialog
+from tkinter import Tk, filedialog
+import os
 
-def generate_pdf(data):
-    """
-    Esto genera un archivo PDF con la información y permite al usuario elegir la ubicación para guardarlo.
+# Conectar a la base de datos
+def connect_to_database():
+    """Conecta a la base de datos SQLite."""
+    connection = sqlite3.connect("ReportePagosBVLabs.db")
+    print(f"Conectado a la base de datos: ReportePagosBVLabs.db")
+    return connection
 
-    Args:
-        data (dict): Diccionario con las claves 'name', 'price', 'quantity', 'fortnight_name',
-                     'total_price', 'iva', y 'total_iva_price'.
+# Función para obtener las ventas por quincena
+def get_sales_by_fortnight(connection, fortnight_id):
+    """Obtiene las ventas de productos para una quincena específica."""
+    query = '''
+        SELECT 
+            Products.name AS product_name,
+            Products.price AS product_price,
+            Sales.quantity AS product_quantity,
+            SalesperFortnight.month AS sales_month,
+            SalesperFortnight.year AS sales_year,
+            SalesperFortnight.fortnight_name AS sales_fortnight
+        FROM Sales
+        INNER JOIN Products ON Sales.product_id = Products.id
+        INNER JOIN SalesperFortnight ON Sales.fortnight_id = SalesperFortnight.id
+        WHERE SalesperFortnight.id = ?;
+    '''
+    cursor = connection.cursor()
+    cursor.execute(query, (fortnight_id,))
+    sales_data = cursor.fetchall()
+    cursor.close()
+    return sales_data
 
-    Returns:
-        None
-    """
-    # Abrir un cuadro de diálogo para seleccionar dónde guardar el archivo
-    output_file = filedialog.asksaveasfilename(
-        defaultextension=".pdf",
-        filetypes=[("PDF files", "*.pdf")],
-        title="Guardar reporte como"
-    )
-
-    if not output_file:
-        print("Operación cancelada por el usuario.")
+# Función para generar el reporte de ventas en PDF
+def generate_sales_report(fortnight_id):
+    """Genera un reporte de ventas por quincena en formato PDF con ubicación seleccionada por el usuario."""
+    conn = connect_to_database()
+    sales = get_sales_by_fortnight(conn, fortnight_id)
+    
+    if not sales:
+        print(f"No se encontraron ventas para la quincena con ID {fortnight_id}.")
         return
     
+    # Obtener el nombre de la quincena para el título y nombre del archivo
+    sales_fortnight = sales[0][5]  # Nombre de la quincena
+    
+    # **Eliminar caracteres inválidos del nombre del archivo**
+    safe_filename = f"Reporte_Ventas_{sales_fortnight}.pdf"
+    safe_filename = "".join(c if c.isalnum() or c in (" ", "_", "-") else "_" for c in safe_filename)
+
+    # Pedir al usuario que seleccione dónde guardar el archivo
+    Tk().withdraw()  # Ocultar la ventana principal de Tkinter
+    output_filename = filedialog.asksaveasfilename(
+        defaultextension=".pdf",
+        filetypes=[("Archivos PDF", "*.pdf")],
+        title="Guardar Reporte de Ventas",
+        initialfile=safe_filename
+    )
+
+    if not output_filename:  # Si el usuario cancela, no se genera el PDF
+        print("Generación del reporte cancelada.")
+        return
+
     try:
-        # Crear el PDF
-        c = SimpleDocTemplate(output_file, pagesize=letter) #utiliza simpledocs para crear un pdf
+        c = canvas.Canvas(output_filename, pagesize=A4)
+        width, height = A4
+        
+        # **TÍTULO**
+        c.setFont("Helvetica-Bold", 14)
+        c.setFillColor(colors.darkblue)
+        c.drawString(50, height - 50, f"Reporte de Ventas - {sales_fortnight}")
+        
+        # **Encabezado de columnas**
+        c.setFont("Helvetica-Bold", 10)
+        c.setFillColor(colors.red)
+        c.drawString(50, height - 80, "Producto")
+        c.drawString(200, height - 80, "Precio")
+        c.drawString(300, height - 80, "Cantidad")
+        c.drawString(400, height - 80, "Total Producto")  # Nueva columna
+        
+        # **Datos de ventas**
+        c.setFont("Helvetica", 10)
+        c.setFillColor(colors.black)
+        y = height - 100
+        max_product_name_width = 140  # Ancho máximo para el nombre del producto
+        total_price = 0  # Variable para calcular el total sin IVA
+        
+        for row in sales:
+            price = float(row[1].replace(',', ''))
+            quantity = row[2]
+            total_product = price * quantity  # Total por producto
+            
+            # Sumar al total general
+            total_price += total_product
+            
+            # **Obtener el nombre del producto y dividir en líneas si es muy largo**
+            product_name = row[0]
+            lines = []
+            current_line = ""
+            for word in product_name.split():
+                if c.stringWidth(current_line + " " + word, "Helvetica", 10) <= max_product_name_width:
+                    current_line += " " + word
+                else:
+                    lines.append(current_line)
+                    current_line = word
+            lines.append(current_line)  # Última línea
+            
+            # **Dibujar el nombre del producto en múltiples líneas**
+            for i, line in enumerate(lines):
+                c.drawString(50, y - i * 12, line)
+            y -= len(lines) * 12  # Ajustar la posición
+            
+            # **Dibujar otras columnas**
+            c.drawString(200, y, f"¢ {price:,.2f}")  # Símbolo de colón correcto
+            c.drawString(300, y, str(quantity))
+            c.drawString(400, y, f"¢ {total_product:,.2f}")  # Total del producto
+            y -= 20  # Espacio entre filas
 
-        elements = []
-
-        # Estilos para texto
-        styles = getSampleStyleSheet()
-        title_style = ParagraphStyle(
-            "Title",
-            parent=styles["Title"],
-            fontName="Helvetica-Bold",
-            fontSize=16,
-            textColor=colors.darkblue,
-            alignment=1,
-        )
-        #estilos para substexto , por si se necesita agregar
-        subtitle_style = ParagraphStyle(
-            "Subtitle",
-            parent=styles["Normal"],
-            fontName="Helvetica",
-            fontSize=12,
-            textColor=colors.darkgray,
-            alignment=1,
-        )
-        #iteracion para obtener los datos de presentacion del reporte:
-        primera_venta = next(iter(data.values()))
-        ventaQuincena = primera_venta["overall_Price"]
-        ventaquincenaIva = primera_venta["overall_price_iva"]
-        quincena = primera_venta["quincena"]
-        # Título y subtítulo
-        elements.append(Paragraph("Reporte de Ventas ", title_style))
-        elements.append(Paragraph("\n"))  # Espacio
-        elements.append(Paragraph(f"Reporte de la quincena: {quincena}", subtitle_style))
-        elements.append(Paragraph("\n"))  # Espacio
-        elements.append(Paragraph(f"Venta quincenal sin IVA : {ventaQuincena}", subtitle_style))
-        elements.append(Paragraph("\n"))  # Espacio
-        elements.append(Paragraph(f"Venta quincenal con IVA : {ventaquincenaIva}", subtitle_style))
-        # Encabezados de la tabla , son los titulos del query
-        table_data = [
-            ["Producto", "Precio (CR)", "Cantidad", "Precio Total (CR)", "IVA (CR)", "Total con IVA (CR)"]
-        ]
-        for key, row in data.items():  # Iterar sobre los elementos del diccionario
-            table_data.append([
-                row["name"],  # Nombre del producto
-                row['price'],  # Precio con 2 decimales
-                row["quantity"],  # Cantidad
-                row['total_price'],  # Precio total con 2 decimales
-                row['iva'],  # IVA con 2 decimales
-                row['total_price_with_iva']   # Total con IVA con 2 decimales
-            ])
-
-
-        # Tabla con estilo
-        table = Table(table_data, colWidths=[100, 80, 60, 100, 100, 60, 100])
-        table.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.lightblue),  # Fondo para encabezado
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),  # Texto blanco en encabezado
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),  # Centrar texto
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),  # Fuente en encabezado
-            ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),  # Fuente para datos
-            ("FONTSIZE", (0, 0), (-1, -1), 10),  # Tamaño de fuente
-            ("BOTTOMPADDING", (0, 0), (-1, 0), 10),  # Espaciado inferior en encabezado
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.gray),  # Líneas de tabla
-            ("BACKGROUND", (0, 1), (-1, -1), colors.beige),  # Fondo para filas
-        ]))
-        elements.append(table)
-
-    # Construir PDF
-        c.build(elements)
-        print(f"PDF guardado correctamente en: {output_file}")
-
-    except PermissionError as e:
-        print(f"Error: No se tienen permisos para escribir en esta ubicación: {e}")
+        # **Calcular el IVA y el total con IVA (13%)**
+        iva = total_price * 0.13
+        total_with_iva = total_price + iva
+        
+        # **Imprimir el total sin IVA, el IVA y el total con IVA al final**
+        c.setFont("Helvetica-Bold", 10)
+        c.setFillColor(colors.black)
+        c.drawString(50, y - 20, f"Total sin IVA: ¢ {total_price:,.2f}")
+        c.drawString(50, y - 40, f"IVA (13%): ¢ {iva:,.2f}")
+        c.drawString(50, y - 60, f"Total con IVA: ¢ {total_with_iva:,.2f}")
+        
+        # **Finalizar el PDF**
+        c.save()
+        conn.close()
+        print(f"Reporte guardado como: {output_filename}")
+    
     except Exception as e:
-        print(f"Error al generar el PDF: {e}")
-
+        print(f"Error al guardar el archivo: {e}")

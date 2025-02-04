@@ -5,8 +5,8 @@ from Funcions.Load import load_products
 from Funcions.Search import search_products
 from Funcions.AddFortnight import initialize_fortnight
 from Funcions.Addsale import Addsale
-from Funcions.getPDF import generate_pdf
-from Funcions.Getquincena import get_sales_last_fortnight
+from Funcions.getPDF import generate_sales_report
+from Funcions.GetFortnight import get_last_fortnight
 from PIL import Image, ImageTk
 import sqlite3
 
@@ -153,9 +153,8 @@ class SalesApp:
 
     def view_report(self):
         """Muestra el reporte de ventas."""
-        data = get_sales_last_fortnight(self.connection)
-        print(data)
-        generate_pdf(data)
+        data = get_last_fortnight(self.connection)
+        generate_sales_report(data['id'])
 
 if __name__ == "__main__":
     root = tk.Tk()
