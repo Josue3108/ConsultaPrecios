@@ -4,6 +4,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from tkinter import Tk, filedialog
 import os
+from datetime import datetime
 
 # Conectar a la base de datos
 def connect_to_database():
@@ -44,14 +45,11 @@ def generate_sales_report(fortnight_id):
         print(f"No se encontraron ventas para la quincena con ID {fortnight_id}.")
         return
     
-    # Obtener el nombre de la quincena para el título y nombre del archivo
     sales_fortnight = sales[0][5]  # Nombre de la quincena
     
-    # **Eliminar caracteres inválidos del nombre del archivo**
     safe_filename = f"Reporte_Ventas_{sales_fortnight}.pdf"
     safe_filename = "".join(c if c.isalnum() or c in (" ", "_", "-") else "_" for c in safe_filename)
 
-    # Pedir al usuario que seleccione dónde guardar el archivo
     Tk().withdraw()  # Ocultar la ventana principal de Tkinter
     output_filename = filedialog.asksaveasfilename(
         defaultextension=".pdf",
@@ -60,7 +58,7 @@ def generate_sales_report(fortnight_id):
         initialfile=safe_filename
     )
 
-    if not output_filename:  # Si el usuario cancela, no se genera el PDF
+    if not output_filename:
         print("Generación del reporte cancelada.")
         return
 
@@ -68,35 +66,44 @@ def generate_sales_report(fortnight_id):
         c = canvas.Canvas(output_filename, pagesize=A4)
         width, height = A4
         
+        # **Encabezado con logo**
+        logo_path = "Images\BV LABS.jpg"  # Asegúrate de que el archivo está en la misma carpeta
+        if os.path.exists(logo_path):
+            c.drawImage(logo_path, 50, height - 80, width=100, height=50, preserveAspectRatio=True, mask='auto')
+        
+        # **Fecha de facturación**
+        current_date = datetime.now().strftime("%d/%m/%Y")
+        c.setFont("Helvetica-Bold", 10)
+        c.setFillColor(colors.black)
+        c.drawString(450, height - 50, f"Fecha: {current_date}")
+        
         # **TÍTULO**
         c.setFont("Helvetica-Bold", 14)
         c.setFillColor(colors.darkblue)
-        c.drawString(50, height - 50, f"Reporte de Ventas - {sales_fortnight}")
+        c.drawString(50, height - 100, f"Reporte de Ventas - {sales_fortnight}")
         
         # **Encabezado de columnas**
         c.setFont("Helvetica-Bold", 10)
         c.setFillColor(colors.red)
-        c.drawString(50, height - 80, "Producto")
-        c.drawString(200, height - 80, "Precio")
-        c.drawString(300, height - 80, "Cantidad")
-        c.drawString(400, height - 80, "Total Producto")  # Nueva columna
+        c.drawString(50, height - 130, "Producto")
+        c.drawString(200, height - 130, "Precio")
+        c.drawString(300, height - 130, "Cantidad")
+        c.drawString(400, height - 130, "Total Producto")
         
         # **Datos de ventas**
         c.setFont("Helvetica", 10)
         c.setFillColor(colors.black)
-        y = height - 100
-        max_product_name_width = 140  # Ancho máximo para el nombre del producto
-        total_price = 0  # Variable para calcular el total sin IVA
+        y = height - 150
+        max_product_name_width = 140
+        total_price = 0
         
         for row in sales:
             price = float(row[1].replace(',', ''))
             quantity = row[2]
-            total_product = price * quantity  # Total por producto
+            total_product = price * quantity
             
-            # Sumar al total general
             total_price += total_product
             
-            # **Obtener el nombre del producto y dividir en líneas si es muy largo**
             product_name = row[0]
             lines = []
             current_line = ""
@@ -106,31 +113,26 @@ def generate_sales_report(fortnight_id):
                 else:
                     lines.append(current_line)
                     current_line = word
-            lines.append(current_line)  # Última línea
+            lines.append(current_line)
             
-            # **Dibujar el nombre del producto en múltiples líneas**
             for i, line in enumerate(lines):
                 c.drawString(50, y - i * 12, line)
-            y -= len(lines) * 12  # Ajustar la posición
+            y -= len(lines) * 12
             
-            # **Dibujar otras columnas**
-            c.drawString(200, y, f"¢ {price:,.2f}")  # Símbolo de colón correcto
+            c.drawString(200, y, f"¢ {price:,.2f}")
             c.drawString(300, y, str(quantity))
-            c.drawString(400, y, f"¢ {total_product:,.2f}")  # Total del producto
-            y -= 20  # Espacio entre filas
+            c.drawString(400, y, f"¢ {total_product:,.2f}")
+            y -= 20
 
-        # **Calcular el IVA y el total con IVA (13%)**
         iva = total_price * 0.13
         total_with_iva = total_price + iva
         
-        # **Imprimir el total sin IVA, el IVA y el total con IVA al final**
         c.setFont("Helvetica-Bold", 10)
         c.setFillColor(colors.black)
         c.drawString(50, y - 20, f"Total sin IVA: ¢ {total_price:,.2f}")
         c.drawString(50, y - 40, f"IVA (13%): ¢ {iva:,.2f}")
         c.drawString(50, y - 60, f"Total con IVA: ¢ {total_with_iva:,.2f}")
         
-        # **Finalizar el PDF**
         c.save()
         conn.close()
         print(f"Reporte guardado como: {output_filename}")

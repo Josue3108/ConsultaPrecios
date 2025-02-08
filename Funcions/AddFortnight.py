@@ -21,7 +21,7 @@ def add_sales_per_fortnight(connection):
 
         cursor = connection.cursor()
 
-        # Verificar cuántas quincenas existen para el mes y el año actuales
+        # Verificar cuántos pagos existen para el mes y el año actuales
         cursor.execute('''
             SELECT COUNT(*) FROM SalesperFortnight WHERE month = ? AND year = ?
         ''', (month, year))
@@ -31,17 +31,17 @@ def add_sales_per_fortnight(connection):
             print(f"Ya existen las 4 quincenas para {month:02d}/{year}.")
             return False
 
-        # Determinar el nombre de la siguiente quincena a crear
+        # Determinar el nombre del siguiente Pago a crear
         quincena_names = [
-            f"Primera Quincena {month:02d}/{year}",
-            f"Segunda Quincena {month:02d}/{year}",
-            f"Tercera Quincena {month:02d}/{year}",
-            f"Cuarta Quincena {month:02d}/{year}"
+            f"Primer Pago {month:02d}/{year}",
+            f"Segundo Pago {month:02d}/{year}",
+            f"Tercer Pago {month:02d}/{year}",
+            f"Cuarto Pago {month:02d}/{year}"
         ]
 
         quincena_name = quincena_names[count]  # Seleccionar la quincena correspondiente
 
-        # Insertar la siguiente quincena en la tabla SalesperFortnight
+        # Insertar el siguiente Pago en la tabla SalesperFortnight
         cursor.execute('''
             INSERT INTO SalesperFortnight (month, year, fortnight_name)
             VALUES (?, ?, ?)
