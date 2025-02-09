@@ -20,7 +20,8 @@ def create_table_products(connection):
             CREATE TABLE IF NOT EXISTS Products (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
-                price INTEGER NOT NULL
+                price INTEGER NOT NULL,
+                tax_rate REAL NOT NULL DEFAULT 0.0
             );
         ''')
         connection.commit()
@@ -76,7 +77,7 @@ def create_table_sales(connection):
 
 # Función para consultar información sobre ventas para un ID de SalesperFortnight
 def get_sales_by_fortnight_id(connection, fortnight_id):
-    """Obtiene el nombre del producto, su precio, cantidad, mes, año y quincena para un ID de SalesperFortnight."""
+    """Obtiene el nombre del producto, su precio, tasa de IVA, cantidad, mes, año y quincena para un ID de SalesperFortnight."""
     try:
         cursor = connection.cursor()
         
@@ -84,10 +85,11 @@ def get_sales_by_fortnight_id(connection, fortnight_id):
             SELECT 
                 Products.name AS product_name,
                 Products.price AS product_price,
+                Products.tax_rate AS product_tax_rate,
                 Sales.quantity AS product_quantity,
                 SalesperFortnight.month AS sales_month,
                 SalesperFortnight.year AS sales_year,
-                SalesperFortnight.fortnight AS sales_fortnight
+                SalesperFortnight.fortnight_name AS sales_fortnight
             FROM Sales
             INNER JOIN Products ON Sales.product_id = Products.id
             INNER JOIN SalesperFortnight ON Sales.fortnight_id = SalesperFortnight.id
@@ -99,8 +101,8 @@ def get_sales_by_fortnight_id(connection, fortnight_id):
         
         if results:
             for row in results:
-                print(f"Producto: {row[0]}, Precio: {row[1]}, Cantidad: {row[2]}, "
-                      f"Mes: {row[3]}, Año: {row[4]}, Quincena: {row[5]}")
+                print(f"Producto: {row[0]}, Precio: {row[1]}, IVA: {row[2]}, Cantidad: {row[3]}, "
+                      f"Mes: {row[4]}, Año: {row[5]}, Quincena: {row[6]}")
         else:
             print(f"No se encontraron ventas para la quincena con ID {fortnight_id}.")
     except sqlite3.Error as e:
@@ -117,11 +119,6 @@ if __name__ == "__main__":
     create_table_products(conn)
     create_table_salesperfortnight(conn)
     create_table_sales(conn)
-    
-    # Ejecutar consulta de ejemplo (puedes cambiar el ID para probar)
-    fortnight_id_to_query = 1  # Cambia este ID según los datos que tengas
-    print(f"Consultando ventas para el ID de quincena {fortnight_id_to_query}:")
-    get_sales_by_fortnight_id(conn, fortnight_id_to_query)
     
     # Cerrar la conexión
     conn.close()

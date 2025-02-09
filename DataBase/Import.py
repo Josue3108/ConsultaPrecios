@@ -14,7 +14,7 @@ def import_products_from_excel(file_path):
         data = pd.read_excel(file_path)
 
         # Validar las columnas requeridas
-        required_columns = {'name', 'price'}
+        required_columns = {'name', 'price', 'tax_rate'}
         if not required_columns.issubset(data.columns):
             raise ValueError(f"El archivo debe contener las columnas: {required_columns}")
 
@@ -25,8 +25,8 @@ def import_products_from_excel(file_path):
         # Insertar los datos en la tabla Products
         for _, row in data.iterrows():
             cursor.execute(
-                "INSERT INTO Products (name, price) VALUES (?, ?)",
-                (row['name'], row['price'])
+                "INSERT INTO Products (name, price, tax_rate) VALUES (?, ?, ?)",
+                (row['name'], row['price'], row['tax_rate'])
             )
 
         conn.commit()
