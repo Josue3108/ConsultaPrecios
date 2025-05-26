@@ -1,5 +1,5 @@
 ('C:\\Users\\yangr\\Desktop\\ConsultaPrecios\\dist\\ConsultaPrecios.exe',
- True,
+ False,
  False,
  False,
  ['C:\\Users\\yangr\\Desktop\\ConsultaPrecios\\logo.ico'],
@@ -10673,8 +10673,8 @@
  [],
  False,
  False,
- 1748298863,
- [('run.exe',
-   'C:\\Users\\yangr\\AppData\\Roaming\\Python\\Python311\\site-packages\\PyInstaller\\bootloader\\Windows-64bit-intel\\run.exe',
+ 1748299113,
+ [('runw.exe',
+   'C:\\Users\\yangr\\AppData\\Roaming\\Python\\Python311\\site-packages\\PyInstaller\\bootloader\\Windows-64bit-intel\\runw.exe',
    'EXECUTABLE')],
  'C:\\Program Files\\Python311\\python311.dll')
