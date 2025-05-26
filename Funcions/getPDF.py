@@ -9,11 +9,13 @@ from datetime import datetime
 import sys
 
 def resource_path(relative_path):
-    """Obtiene la ruta absoluta al recurso, compatible con PyInstaller."""
     try:
-        base_path = sys._MEIPASS  # PyInstaller lo define al ejecutar el .exe
+        # Si estamos en PyInstaller, esta variable existe pero NO usarla para la base de datos
+        base_path = os.path.dirname(sys.executable)  # carpeta donde está el .exe
     except Exception:
+        # En desarrollo (ejecutando script .py)
         base_path = os.path.abspath(".")
+
     return os.path.join(base_path, relative_path)
 
 def connect_to_database():
