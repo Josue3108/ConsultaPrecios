@@ -1,4 +1,4 @@
-('C:\\Users\\yangr\\Desktop\\ConsultaPrecios\\build\\GUI\\GUI.pkg',
+('C:\\Users\\yangr\\Desktop\\ConsultaPrecios\\build\\GUI\\ConsultaPrecios.pkg',
  {'BINARY': True,
   'DATA': True,
   'EXECUTABLE': True,
