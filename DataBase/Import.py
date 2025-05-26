@@ -1,43 +1,61 @@
 import pandas as pd
 import sqlite3
+import os
+import sys
 
-# Nombre de la base de datos
-DATABASE_NAME = "ReportePagosBVLabs.db"
+def resource_path(relative_path):
+    """Obtiene la ruta absoluta al recurso, compatible con PyInstaller."""
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
+def connect_to_database():
+    """Conecta a la base de datos SQLite."""
+    db_path = resource_path("ReportePagosBVLabs.db")
+    return sqlite3.connect(db_path)
 
 def import_products_from_excel(file_path):
     """
-    Importa productos desde un archivo Excel a la tabla Products en la base de datos.
-    :param file_path: Ruta del archivo Excel.
+    Importa productos desde un archivo Excel a la base de datos.
+    Actualiza los existentes por nombre o los inserta si no existen.
     """
+    conn = None
     try:
-        # Leer el archivo Excel
-        data = pd.read_excel(file_path)
+        data = pd.read_excel(file_path, dtype={"name": str, "supplier": str})
+        data.columns = data.columns.str.strip().str.lower()
 
-        # Validar las columnas requeridas
-        required_columns = {'name', 'price', 'tax_rate'}
+        required_columns = {'name', 'price', 'tax_rate', 'supplier'}
         if not required_columns.issubset(data.columns):
             raise ValueError(f"El archivo debe contener las columnas: {required_columns}")
 
-        # Conectar a la base de datos
-        conn = sqlite3.connect(DATABASE_NAME)
+        data['price'] = data['price'].astype(str).str.replace(',', '').astype(float)
+        data['tax_rate'] = data['tax_rate'].astype(str).str.replace(',', '').astype(float)
+        data = data.dropna(subset=['name'])
+
+        conn = connect_to_database()
         cursor = conn.cursor()
 
-        # Insertar los datos en la tabla Products
         for _, row in data.iterrows():
-            cursor.execute(
-                "INSERT INTO Products (name, price, tax_rate) VALUES (?, ?, ?)",
-                (row['name'], row['price'], row['tax_rate'])
-            )
+            cursor.execute("""
+                UPDATE Products
+                SET price = ?, tax_rate = ?, supplier = ?
+                WHERE name = ?
+            """, (row['price'], row['tax_rate'], row['supplier'], row['name']))
+
+            if cursor.rowcount == 0:
+                cursor.execute("""
+                    INSERT INTO Products (name, price, tax_rate, supplier)
+                    VALUES (?, ?, ?, ?)
+                """, (row['name'], row['price'], row['tax_rate'], row['supplier']))
 
         conn.commit()
-        conn.close()
+        return True, "Productos importados correctamente."
 
-        print("Los productos se han importado exitosamente.")
     except Exception as e:
-        print(f"Error al importar productos: {e}")
+        return False, f"Error al importar productos: {e}"
 
-# Ejemplo de uso
-if __name__ == "__main__":
-    file_path = "C:/Users/yangr/Desktop/ConsultaPrecios/PRECIOS_LAB_SJ.xlsx"
-
-    import_products_from_excel(file_path)
+    finally:
+        if conn:
+            conn.close()

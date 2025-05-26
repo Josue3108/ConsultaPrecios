@@ -1,4 +1,5 @@
 import sqlite3
+import datetime
 from .GetFortnight import get_last_fortnight
 
 def Addsale(connection, prodName, quantity):
@@ -23,14 +24,17 @@ def Addsale(connection, prodName, quantity):
 
         fortnight_id = last_fortnight["id"]  # Asegúrate de usar el campo 'id' del diccionario
 
-        # Paso 3: Insertar los datos en la tabla Sales
+        # Paso 3: Obtener la fecha actual
+        sale_date = datetime.date.today().strftime("%Y-%m-%d")
+
+        # Paso 4: Insertar los datos en la tabla Sales con la fecha actual
         cursor.execute('''
-            INSERT INTO Sales (product_id, fortnight_id, quantity)
-            VALUES (?, ?, ?)
-        ''', (product_id, fortnight_id, quantity))
+            INSERT INTO Sales (product_id, fortnight_id, quantity, sale_date)
+            VALUES (?, ?, ?, ?)
+        ''', (product_id, fortnight_id, quantity, sale_date))
 
         connection.commit()
-        print(f"Venta de {quantity} unidades del producto '{prodName}' registrada exitosamente.")
+        print(f"Venta de {quantity} unidades del producto '{prodName}' registrada exitosamente con fecha {sale_date}.")
 
     except sqlite3.Error as e:
         print("Error al agregar la venta:", e)

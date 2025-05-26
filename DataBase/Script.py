@@ -1,27 +1,59 @@
+import sys
+import os
 import sqlite3
 
-# Nombre de la base de datos
-DATABASE_NAME = "ReportePagosBVLabs.db"
+def resource_path(relative_path):
+    try:
+        # Si estamos en PyInstaller, esta variable existe pero NO usarla para la base de datos
+        base_path = os.path.dirname(sys.executable)  # carpeta donde está el .exe
+    except Exception:
+        # En desarrollo (ejecutando script .py)
+        base_path = os.path.abspath(".")
 
-# Función para conectar a la base de datos
+    return os.path.join(base_path, relative_path)
+
+DATABASE_NAME = resource_path("ReportePagosBVLabs.db")
+
 def connect_to_database():
-    """Conecta a la base de datos SQLite. Si no existe, se crea automáticamente."""
     connection = sqlite3.connect(DATABASE_NAME)
     print(f"Conectado a la base de datos: {DATABASE_NAME}")
     return connection
 
-# Función para crear la tabla Products
+
+def table_exists(connection, table_name):
+    """Verifica si una tabla existe en la base de datos."""
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT name FROM sqlite_master WHERE type='table' AND name=?;
+    """, (table_name,))
+    exists = cursor.fetchone() is not None
+    cursor.close()
+    return exists
+
+def count_rows(connection, table_name):
+    """Cuenta las filas en una tabla dada."""
+    cursor = connection.cursor()
+    cursor.execute(f"SELECT COUNT(*) FROM {table_name};")
+    count = cursor.fetchone()[0]
+    cursor.close()
+    return count
+
 def create_table_products(connection):
-    """Crea la tabla Products en la base de datos."""
+    """Crea la tabla Products si no existe y muestra el número de registros si existe."""
+    if table_exists(connection, "Products"):
+        count = count_rows(connection, "Products")
+        print(f"La tabla 'Products' ya existe y contiene {count} registros.")
+        return
+
     try:
         cursor = connection.cursor()
-        
         cursor.execute('''
-            CREATE TABLE IF NOT EXISTS Products (
+            CREATE TABLE Products (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
                 price INTEGER NOT NULL,
-                tax_rate REAL NOT NULL DEFAULT 0.0
+                tax_rate REAL NOT NULL DEFAULT 0.0,
+                supplier TEXT NOT NULL
             );
         ''')
         connection.commit()
@@ -31,14 +63,17 @@ def create_table_products(connection):
     finally:
         cursor.close()
 
-# Función para crear la tabla SalesperFortnight
 def create_table_salesperfortnight(connection):
-    """Crea la tabla SalesperFortnight en la base de datos."""
+    """Crea la tabla SalesperFortnight si no existe y muestra el número de registros si existe."""
+    if table_exists(connection, "SalesperFortnight"):
+        count = count_rows(connection, "SalesperFortnight")
+        print(f"La tabla 'SalesperFortnight' ya existe y contiene {count} registros.")
+        return
+
     try:
         cursor = connection.cursor()
-        
         cursor.execute('''
-            CREATE TABLE IF NOT EXISTS SalesperFortnight (
+            CREATE TABLE SalesperFortnight (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 month TEXT NOT NULL,
                 year INTEGER NOT NULL,
@@ -52,18 +87,22 @@ def create_table_salesperfortnight(connection):
     finally:
         cursor.close()
 
-# Función para crear la tabla Sales
 def create_table_sales(connection):
-    """Crea la tabla Sales en la base de datos."""
+    """Crea la tabla Sales si no existe y muestra el número de registros si existe."""
+    if table_exists(connection, "Sales"):
+        count = count_rows(connection, "Sales")
+        print(f"La tabla 'Sales' ya existe y contiene {count} registros.")
+        return
+
     try:
         cursor = connection.cursor()
-        
         cursor.execute('''
-            CREATE TABLE IF NOT EXISTS Sales (
+            CREATE TABLE Sales (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 product_id INTEGER NOT NULL,
                 fortnight_id INTEGER NOT NULL,
                 quantity INTEGER NOT NULL,
+                sale_date TEXT NOT NULL,
                 FOREIGN KEY (product_id) REFERENCES Products (id) ON DELETE CASCADE,
                 FOREIGN KEY (fortnight_id) REFERENCES SalesperFortnight (id) ON DELETE CASCADE
             );
@@ -75,51 +114,14 @@ def create_table_sales(connection):
     finally:
         cursor.close()
 
-# Función para consultar información sobre ventas para un ID de SalesperFortnight
-def get_sales_by_fortnight_id(connection, fortnight_id):
-    """Obtiene el nombre del producto, su precio, tasa de IVA, cantidad, mes, año y quincena para un ID de SalesperFortnight."""
-    try:
-        cursor = connection.cursor()
-        
-        query = '''
-            SELECT 
-                Products.name AS product_name,
-                Products.price AS product_price,
-                Products.tax_rate AS product_tax_rate,
-                Sales.quantity AS product_quantity,
-                SalesperFortnight.month AS sales_month,
-                SalesperFortnight.year AS sales_year,
-                SalesperFortnight.fortnight_name AS sales_fortnight
-            FROM Sales
-            INNER JOIN Products ON Sales.product_id = Products.id
-            INNER JOIN SalesperFortnight ON Sales.fortnight_id = SalesperFortnight.id
-            WHERE Sales.fortnight_id = ?;
-        '''
-        
-        cursor.execute(query, (fortnight_id,))
-        results = cursor.fetchall()
-        
-        if results:
-            for row in results:
-                print(f"Producto: {row[0]}, Precio: {row[1]}, IVA: {row[2]}, Cantidad: {row[3]}, "
-                      f"Mes: {row[4]}, Año: {row[5]}, Quincena: {row[6]}")
-        else:
-            print(f"No se encontraron ventas para la quincena con ID {fortnight_id}.")
-    except sqlite3.Error as e:
-        print(f"Error al realizar la consulta: {e}")
-    finally:
-        cursor.close()
-
-# Función principal
-if __name__ == "__main__":
-    # Conectar a la base de datos
-    conn = connect_to_database()
-    
-    # Crear las tablas
-    create_table_products(conn)
-    create_table_salesperfortnight(conn)
-    create_table_sales(conn)
-    
-    # Cerrar la conexión
-    conn.close()
+# Función principal para crear todas las tablas o mostrar datos existentes
+def setup_database():
+    connection = connect_to_database()
+    create_table_products(connection)
+    create_table_salesperfortnight(connection)
+    create_table_sales(connection)
+    connection.close()
     print("Conexión cerrada.")
+
+if __name__ == "__main__":
+    setup_database()
